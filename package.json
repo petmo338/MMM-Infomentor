@@ -1,0 +1,24 @@
+{
+  "name": "mmm-infomentor",
+  "version": "1.0.0",
+  "description": "Display Infomentor data on your MagicMirror",
+  "main": "MagicMirror-Infomentor.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/petmo338/MMM-infomentor.git"
+  },
+  "keywords": [
+    "MMM",
+    "MagicMirror",
+    "Infomentor"
+  ],
+  "author": "Peter Möller",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/petmo338/MMM-infomentor/issues"
+  },
+  "homepage": "https://github.com/petmo338/MMM-infomentor#readme"
+}
