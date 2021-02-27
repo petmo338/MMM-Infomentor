@@ -8,8 +8,6 @@
 Module.register("MMM-Infomentor", {
 
 	defaults: {
-		customCssFile: "MMM-Infomentor.css",
-		fadeSpeed: 4000,
 		allowHTML: false,
 		debug: true,
 		pupils: {}
@@ -22,12 +20,14 @@ Module.register("MMM-Infomentor", {
 	 * by the MagicMirror framework
 	 */
 	start: function() {
-		Log.error(this.name + ' is started!');
+		console.error(this.name + ' is started!');
 		// Schedule update timer.
 		// var self = this;
 		// setInterval(function() {
 		// 	self.updateDom(self.config.fadeSpeed);
 		// }, this.config.updateInterval);
+		this.sendSocketNotification('START', {message: 'start connection'});
+
 		this.sendSocketNotification("INIT", {
 			config: this.config
 		});
@@ -36,21 +36,21 @@ Module.register("MMM-Infomentor", {
 
 	socketNotificationReceived: function(notification, payload) {
 
-		Log.log(this.name + " received a socket notification: " + notification + " - Payload: " + payload);
+		console.log(this.name + " received a socket notification: " + notification + " - Payload: " + payload);
 		
-		var id = payload.pupil.id;
-		var doUpdate = false;
-		if (this.config.pupils[id] === undefined) {
-			this.config.pupils[id] = payload.pupil;
-			doUpdate = true;
-		}
-		else if (this.config.pupils[id] !== payload.pupil) {
-			this.config.pupils[id] = payload.pupil;
-			doUpdate = true;
-		}
-		if (doUpdate) {
-			this.updateDom(this.config.fadeSpeed);
-		}
+		// var id = payload.pupil.id;
+		// var doUpdate = false;
+		// if (this.config.pupils[id] === undefined) {
+		// 	this.config.pupils[id] = payload.pupil;
+		// 	doUpdate = true;
+		// }
+		// else if (this.config.pupils[id] !== payload.pupil) {
+		// 	this.config.pupils[id] = payload.pupil;
+		// 	doUpdate = true;
+		// }
+		// if (doUpdate) {
+		// 	this.updateDom(this.config.fadeSpeed);
+		// }
 	},
 
 	/* getHeader()
@@ -69,7 +69,7 @@ Module.register("MMM-Infomentor", {
 	 */
 	getDom: function() {
 		var date = this.getDisplayDate(); 
-
+		console.log('kuken')
 		// get day of week and access respective element in lessons array
 		// var dow = date.locale('en').format("ddd").toLowerCase();
 		// var lessons = this.config.schedule.lessons[dow];
@@ -172,20 +172,6 @@ Module.register("MMM-Infomentor", {
 		return [
 			this.config.customCssFile
 		];
-	},
-
-	getTranslations: function() {
-		return {
-				en: "translations/en.json",
-				de: "translations/de.json",
-				sv: "translations/sv.json",
-				nb: "translations/nb.json",
-				nn: "translations/nn.json",
-				he: "translations/he.json",
-				hu: "translations/hu.json",
-				da: "translations/da.json",
-				pl: "translations/pl.json"
-		}
 	}
 
 });
