@@ -10,7 +10,11 @@ Module.register("MMM-Infomentor", {
 	defaults: {
 		allowHTML: false,
 		debug: true,
-		pupils: {}
+		pupils: {},
+		updateInterval: 3600,
+		animationSpeed: 2.5 * 1000,
+		tableClass: "small",
+		weekdays: ['Mån', 'Tis', 'Ons', 'Tors', 'Fre']
 	},
 
 	requiresVersion: "2.1.0", // Required version of MagicMirror
@@ -20,7 +24,8 @@ Module.register("MMM-Infomentor", {
 	 * by the MagicMirror framework
 	 */
 	start: function() {
-		console.error(this.name + ' is started!');
+		let self = this
+		Log.info(this.name + ' is started!');
 		// Schedule update timer.
 		// var self = this;
 		// setInterval(function() {
@@ -31,26 +36,40 @@ Module.register("MMM-Infomentor", {
 		this.sendSocketNotification("INIT", {
 			config: this.config
 		});
-		this.loaded = true;		
+		this.sendSocketNotification("POLL");
+		this.timer = setInterval(function () {
+			// self.updateDom(self.config.animationSpeed);
+
+			// Broadcast NewsFeed if needed
+			if (true) {
+				self.sendSocketNotification("POLL");
+			}
+		}, this.config.updateInterval*1000);
+
 	},
 
 	socketNotificationReceived: function(notification, payload) {
 
-		console.log(this.name + " received a socket notification: " + notification + " - Payload: " + payload);
-		
-		// var id = payload.pupil.id;
-		// var doUpdate = false;
-		// if (this.config.pupils[id] === undefined) {
-		// 	this.config.pupils[id] = payload.pupil;
-		// 	doUpdate = true;
-		// }
-		// else if (this.config.pupils[id] !== payload.pupil) {
-		// 	this.config.pupils[id] = payload.pupil;
-		// 	doUpdate = true;
-		// }
-		// if (doUpdate) {
-		// 	this.updateDom(this.config.fadeSpeed);
-		// }
+		Log.info(this.name + " received a socket notification: " + notification + " - Payload: " + payload);
+		Log.info(payload);
+		// this.config.pupils = payload;
+		let doUpdate = false;
+		payload.forEach(element => {
+			const id = element.pupil.id;
+			if (this.config.pupils[id] === undefined) {
+				this.config.pupils[id] = element;
+				doUpdate = true;
+			}
+			else if (this.config.pupils[id] !== element) {
+				this.config.pupils[id] = element;
+				doUpdate = true;
+			}
+				
+		});
+		this.loaded = true;		
+		if (doUpdate) {
+			this.updateDom(this.config.animationSpeed);
+		}
 	},
 
 	/* getHeader()
@@ -68,8 +87,60 @@ Module.register("MMM-Infomentor", {
 	 * Create the DOM to show content
 	 */
 	getDom: function() {
-		var date = this.getDisplayDate(); 
-		console.log('kuken')
+		// var date = this.getDisplayDate(); 
+		var wrapper = document.createElement("div");
+
+		if (this.config.pupils === {}) {
+			wrapper.innerHTML = "Unable to log in to Infomentor. Are correct credentials set in config.js? " + this.name + ".";
+			wrapper.className = "dimmed light small";
+			return wrapper;
+		}
+		if (!this.loaded) {
+			wrapper.innerHTML = this.translate("LOADING");
+			wrapper.className = "dimmed light small";
+			return wrapper;
+		}
+		var table = document.createElement("table");
+		table.className = this.config.tableClass;
+
+		var dayRow = document.createElement("tr");
+		dayRow.appendChild(document.createElement("td"));
+		this.config.weekdays.forEach(day => {
+			var dayCell = document.createElement("td");
+			dayCell.innerHTML = day;
+			dayRow.appendChild(dayCell);
+		})
+		table.appendChild(dayRow);
+
+
+		Object.values(this.config.pupils).forEach(pupil => {
+			Log.log(pupil)
+			var row = document.createElement("tr");
+			// if (this.config.colored) {
+			// 	row.className = "colored";
+			// }
+			table.appendChild(row);
+
+			var nameCell = document.createElement("td");
+			// nameCell.className = "day";
+			nameCell.innerHTML = pupil.pupil.initials;
+			row.appendChild(nameCell);
+			this.config.weekdays.forEach(day => {
+				var dayCell = document.createElement("td");
+				dayCell.className = "day";
+				pupil.homework.forEach(assignment => {
+					if (assignment.date.search(day) > -1) {
+						assignment.items.forEach(item => {
+							dayCell.innerHTML = dayCell.innerHTML + item.subject + ": " + item.homeworkText
+						})
+					}
+				})
+				row.appendChild(dayCell);
+			})
+
+		})
+
+
 		// get day of week and access respective element in lessons array
 		// var dow = date.locale('en').format("ddd").toLowerCase();
 		// var lessons = this.config.schedule.lessons[dow];
@@ -86,7 +157,6 @@ Module.register("MMM-Infomentor", {
 		// var timeslots = this.config.schedule.timeslots;
 
 		// build table with timeslot definitions and lessons
-		wrapper = document.createElement("table");
 		// for (let index = 0; index < lessons.length; index++) {
 		// 	const lesson = lessons[index];
 		// 	const time = timeslots[index];
@@ -98,29 +168,26 @@ Module.register("MMM-Infomentor", {
 		// 		wrapper.appendChild(row);
 		// 	}
 		// }
-		for (const pupil in this.config.pupils) {
-			wrapper.appendChild(this.createTimetableRow(pupil.id, pupil))
-		}
-		return wrapper;
+		return table;
 	},
 
-	getDisplayDate: function() {
-		// check if config contains a threshold 'showNextDayAfter'
-		if(this.config.showNextDayAfter) {
-			var threshold = moment().startOf("day")
-							.add(moment.duration(this.config.showNextDayAfter));
-		} else {
-			var threshold = moment().endOf("day");
-		}
+	// getDisplayDate: function() {
+	// 	// check if config contains a threshold 'showNextDayAfter'
+	// 	if(this.config.showNextDayAfter) {
+	// 		var threshold = moment().startOf("day")
+	// 						.add(moment.duration(this.config.showNextDayAfter));
+	// 	} else {
+	// 		var threshold = moment().endOf("day");
+	// 	}
 		
-		// get the current time and increment by one day if threshold time has passed
-		var now  = moment();
-		if(now.isAfter(threshold)) {
-			now = now.add(1, "day");
-		}
+	// 	// get the current time and increment by one day if threshold time has passed
+	// 	var now  = moment();
+	// 	if(now.isAfter(threshold)) {
+	// 		now = now.add(1, "day");
+	// 	}
 
-		return now;
-	},
+	// 	return now;
+	// },
 
 	createTextOnlyDom: function(text) {
 		var wrapper = document.createElement("table");
@@ -165,6 +232,7 @@ Module.register("MMM-Infomentor", {
 	},
 
 	getScripts: function() {
+		return [];
 		return ["moment.js"];
 	},
 
